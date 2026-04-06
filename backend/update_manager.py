@@ -186,12 +186,12 @@ def _do_install():
             _set_status("error", "No hay URL de descarga", "Sin datos de release")
             return
 
-        # 1. Backup
+        # 1. Backup (incluye venv para poder restaurar completamente)
         _set_status("downloading", "Creando backup...")
         if os.path.exists(BACKUP_DIR):
             shutil.rmtree(BACKUP_DIR)
         shutil.copytree(PROJECT_ROOT, BACKUP_DIR,
-                        ignore=shutil.ignore_patterns("venv", "__pycache__", "*.pyc"))
+                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
         logger.info("[OTA] Backup creado en %s", BACKUP_DIR)
 
         # 2. Descarga
@@ -237,16 +237,39 @@ def _do_install():
         if not os.path.exists(venv_path):
             logger.info("[OTA] venv no encontrado, recreando...")
             try:
-                subprocess.run([sys.executable, "-m", "venv", venv_path],
-                              capture_output=True, timeout=120)
+                # Detectar el dueño del directorio del proyecto (no hardcodear usuario)
+                import stat as _stat
+                proj_stat = os.stat(PROJECT_ROOT)
+                proj_uid = proj_stat.st_uid
+                proj_gid = proj_stat.st_gid
+
+                # Crear venv
+                result = subprocess.run([sys.executable, "-m", "venv", venv_path],
+                                      capture_output=True, text=True, timeout=120)
+                if result.returncode != 0:
+                    logger.error("[OTA] Error creando venv: %s", result.stderr)
+
+                # Corregir permisos al dueño del proyecto
+                for root, dirs, files in os.walk(venv_path):
+                    os.chown(root, proj_uid, proj_gid)
+                    for d in dirs:
+                        os.chown(os.path.join(root, d), proj_uid, proj_gid)
+                    for f in files:
+                        os.chown(os.path.join(root, f), proj_uid, proj_gid)
+
+                # Instalar requirements
                 pip_exe = os.path.join(venv_path, "bin", "pip")
                 req_file = os.path.join(backend_path, "requirements.txt")
                 if os.path.exists(req_file):
-                    subprocess.run([pip_exe, "install", "-r", req_file],
-                                  capture_output=True, timeout=300)
+                    result = subprocess.run([pip_exe, "install", "-r", req_file],
+                                          capture_output=True, text=True, timeout=300)
+                    if result.returncode != 0:
+                        logger.error("[OTA] Error instalando requirements: %s", result.stderr)
+
                 logger.info("[OTA] venv recreado exitosamente")
             except Exception as exc:
-                logger.warning("[OTA] Error recreando venv (continuando anyway): %s", exc)
+                logger.error("[OTA] Error recreando venv: %s", exc)
+                raise
 
         # 6. Reiniciar servicio
         _set_status("restarting", "Reiniciando servicio...")
@@ -284,7 +307,14 @@ def _do_install():
 
 
 def _copy_update(source: str, dest: str):
-    """Copia los archivos del update sobre el proyecto, respetando PRESERVE."""
+    """Copia los archivos del update sobre el proyecto, respetando PRESERVE.
+    Usa merge recursivo en vez de borrar directorios completos para no
+    destruir archivos preservados como venv/ que viven dentro de subdirectorios."""
+    # Detectar el dueño original del proyecto
+    proj_stat = os.stat(dest)
+    proj_uid = proj_stat.st_uid
+    proj_gid = proj_stat.st_gid
+
     for item in os.listdir(source):
         src_path  = os.path.join(source, item)
         dest_path = os.path.join(dest, item)
@@ -295,13 +325,19 @@ def _copy_update(source: str, dest: str):
             logger.info("[OTA] Preservado: %s", rel)
             continue
 
+        # Ignorar __pycache__ y .pyc del source
+        if item in ("__pycache__", "venv") or item.endswith(".pyc"):
+            continue
+
         if os.path.isdir(src_path):
-            if os.path.exists(dest_path):
-                shutil.rmtree(dest_path)
-            shutil.copytree(src_path, dest_path,
-                            ignore=shutil.ignore_patterns("venv", "__pycache__", "*.pyc"))
+            if not os.path.exists(dest_path):
+                os.makedirs(dest_path)
+                os.chown(dest_path, proj_uid, proj_gid)
+            # Recursión: mergear contenido sin borrar el directorio destino
+            _copy_update(src_path, dest_path)
         else:
             shutil.copy2(src_path, dest_path)
+            os.chown(dest_path, proj_uid, proj_gid)
 
 
 def _do_rollback():
