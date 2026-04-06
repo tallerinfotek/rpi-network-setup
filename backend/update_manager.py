@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import urllib.request
@@ -228,6 +229,24 @@ def _do_install():
         version_src = os.path.join(source_root, "version.json")
         if os.path.exists(version_src):
             shutil.copy2(version_src, VERSION_FILE)
+
+        # 5b. Recrear venv si no existe (post-instalación)
+        _set_status("installing", "Preparando entorno Python...")
+        backend_path = os.path.join(PROJECT_ROOT, "backend")
+        venv_path = os.path.join(backend_path, "venv")
+        if not os.path.exists(venv_path):
+            logger.info("[OTA] venv no encontrado, recreando...")
+            try:
+                subprocess.run([sys.executable, "-m", "venv", venv_path],
+                              capture_output=True, timeout=120)
+                pip_exe = os.path.join(venv_path, "bin", "pip")
+                req_file = os.path.join(backend_path, "requirements.txt")
+                if os.path.exists(req_file):
+                    subprocess.run([pip_exe, "install", "-r", req_file],
+                                  capture_output=True, timeout=300)
+                logger.info("[OTA] venv recreado exitosamente")
+            except Exception as exc:
+                logger.warning("[OTA] Error recreando venv (continuando anyway): %s", exc)
 
         # 6. Reiniciar servicio
         _set_status("restarting", "Reiniciando servicio...")
