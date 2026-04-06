@@ -94,8 +94,39 @@
         <span class="dot"></span>
         <span class="badge-text">Conectando...</span>
       </div>
+      <button id="update-badge" class="update-badge hidden" title="Nueva versión disponible">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+        </svg>
+        <span id="update-badge-text">Actualizar</span>
+      </button>
     </div>
   </header>
+
+  <!-- ===== MODAL ACTUALIZACIÓN ===== -->
+  <div id="update-modal-overlay" class="modal-overlay">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-title" style="text-align:left;margin-bottom:.25rem">Nueva versión disponible</div>
+      <div style="display:flex;gap:1rem;margin-bottom:1rem;font-size:.82rem;color:var(--muted)">
+        <span>Instalada: <strong id="upd-local-ver" style="color:var(--text)">—</strong></span>
+        <span>Nueva: <strong id="upd-new-ver" style="color:var(--accent)">—</strong></span>
+      </div>
+      <div id="upd-notes" style="font-size:.82rem;color:var(--muted);background:var(--bg);border-radius:8px;padding:.75rem 1rem;margin-bottom:1.25rem;max-height:150px;overflow-y:auto;white-space:pre-wrap;line-height:1.5"></div>
+
+      <!-- Progreso (oculto hasta que se instala) -->
+      <div id="upd-progress" class="hidden">
+        <div class="update-steps" id="upd-steps"></div>
+      </div>
+
+      <div id="upd-actions" class="modal-actions">
+        <button id="upd-cancel-btn" class="btn btn-ghost" onclick="app._closeUpdateModal()">Ahora no</button>
+        <button id="upd-install-btn" class="btn btn-primary" onclick="app._installUpdate()">
+          <div class="btn-spinner"></div>
+          <span class="btn-text">Instalar actualización</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ===== SIDEBAR ===== -->
   <aside class="sidebar">

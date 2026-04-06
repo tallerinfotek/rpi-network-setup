@@ -313,6 +313,7 @@ auth_algs=1
 
         results = {}
         for service in SERVICES_AP:
+            _run(["sudo", "systemctl", "enable", service])
             result = _run(["sudo", "systemctl", "start", service])
             results[service] = {
                 "started": result.returncode == 0,
@@ -338,6 +339,7 @@ auth_algs=1
 
         results = {}
         for service in SERVICES_AP:
+            _run(["sudo", "systemctl", "disable", service])
             result = _run(["sudo", "systemctl", "stop", service])
             results[service] = {
                 "stopped": result.returncode == 0,

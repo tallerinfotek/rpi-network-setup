@@ -34,6 +34,7 @@ from config import (
 from ap_manager import APManager
 from network_manager import NetworkManager
 from server_manager import ServerManager
+import update_manager
 from system_info import (
     get_full_system_info,
     get_hostname,
@@ -882,6 +883,29 @@ def internal_error(e):
 
 
 # ---------------------------------------------------------------------------
+# OTA Updates
+# ---------------------------------------------------------------------------
+
+@app.route("/api/update/status")
+def update_status():
+    return ok(update_manager.get_update_status())
+
+
+@app.route("/api/update/check", methods=["POST"])
+def update_check():
+    update_manager.check_now()
+    return ok({"message": "Check iniciado"})
+
+
+@app.route("/api/update/install", methods=["POST"])
+def update_install():
+    started = update_manager.install_update()
+    if not started:
+        return err("Ya hay una instalación en curso", 409)
+    return ok({"message": "Instalación iniciada"})
+
+
+# ---------------------------------------------------------------------------
 # Punto de entrada
 # ---------------------------------------------------------------------------
 
@@ -894,6 +918,9 @@ if __name__ == "__main__":
         SERVER_DEBUG,
         DEV_MODE,
     )
+
+    # Inicia checker de actualizaciones OTA
+    update_manager.start_background_checker()
 
     # Inicia monitoreo de cambios en eth0
     sm.start_monitoring(interval=5)

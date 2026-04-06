@@ -326,7 +326,9 @@ class NetworkConfigUI {
     this._setupSystem();
     this._setupDebug();
     this._setupApplyButton();
+    this._setupUpdateBadge();
     this._startPolling();
+    this._startUpdatePolling();
 
     // Initial load
     this.loadAll();
@@ -1455,6 +1457,133 @@ class NetworkConfigUI {
       `<div class="log-line"><span class="log-time">${escapeHTML(time)}</span><span class="log-${type}">${escapeHTML(message)}</span></div>`
     ).join('');
     box.scrollTop = 0;
+  }
+
+  /* ====================================================
+     OTA UPDATES
+     ==================================================== */
+
+  _setupUpdateBadge() {
+    document.getElementById('update-badge')?.addEventListener('click', () => {
+      this._openUpdateModal();
+    });
+  }
+
+  _startUpdatePolling() {
+    // Chequear estado de updates cada 60 segundos
+    this._checkUpdateStatus();
+    setInterval(() => this._checkUpdateStatus(), 60_000);
+  }
+
+  async _checkUpdateStatus() {
+    try {
+      const data = await this.api.get('/api/update/status');
+      this._lastUpdateData = data;
+      this._renderUpdateBadge(data);
+      // Si hay una instalación en curso, seguir el progreso
+      if (['downloading', 'installing', 'restarting'].includes(data.status)) {
+        this._renderUpdateProgress(data);
+      }
+    } catch (_) {}
+  }
+
+  _renderUpdateBadge(data) {
+    const badge = document.getElementById('update-badge');
+    const text  = document.getElementById('update-badge-text');
+    if (!badge) return;
+    if (data.update_available) {
+      text.textContent = `v${data.latest_version}`;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  _openUpdateModal() {
+    const data = this._lastUpdateData || {};
+    document.getElementById('upd-local-ver').textContent = data.local_version || '—';
+    document.getElementById('upd-new-ver').textContent   = data.latest_version || '—';
+    document.getElementById('upd-notes').textContent     = data.release_notes  || 'Sin notas de versión.';
+    document.getElementById('upd-progress').classList.add('hidden');
+    document.getElementById('upd-actions').classList.remove('hidden');
+    document.getElementById('update-modal-overlay').classList.add('open');
+  }
+
+  _closeUpdateModal() {
+    document.getElementById('update-modal-overlay').classList.remove('open');
+  }
+
+  async _installUpdate() {
+    const btn = document.getElementById('upd-install-btn');
+    setButtonLoading(btn, true);
+    document.getElementById('upd-actions').classList.add('hidden');
+    document.getElementById('upd-progress').classList.remove('hidden');
+
+    try {
+      await this.api.post('/api/update/install', {});
+      // Polling de progreso cada 2 segundos
+      this._updateProgressInterval = setInterval(async () => {
+        try {
+          const data = await this.api.get('/api/update/status');
+          this._renderUpdateProgress(data);
+          if (data.status === 'done') {
+            clearInterval(this._updateProgressInterval);
+            setTimeout(() => window.location.reload(), 3000);
+          } else if (data.status === 'error') {
+            clearInterval(this._updateProgressInterval);
+            setButtonLoading(btn, false, 'Reintentar');
+            document.getElementById('upd-actions').classList.remove('hidden');
+          }
+        } catch (_) {}
+      }, 2000);
+    } catch (e) {
+      this.toast.error('Error', e.message);
+      setButtonLoading(btn, false, 'Instalar actualización');
+      document.getElementById('upd-actions').classList.remove('hidden');
+      document.getElementById('upd-progress').classList.add('hidden');
+    }
+  }
+
+  _renderUpdateProgress(data) {
+    this._lastUpdateData = data;
+    const steps = [
+      { key: 'downloading', label: 'Descargando actualización...' },
+      { key: 'installing',  label: 'Instalando archivos...' },
+      { key: 'restarting',  label: 'Reiniciando servicio...' },
+      { key: 'done',        label: 'Actualización completada' },
+    ];
+    const statusOrder = ['downloading', 'installing', 'restarting', 'done'];
+    const currentIdx  = statusOrder.indexOf(data.status);
+
+    const container = document.getElementById('upd-steps');
+    if (!container) return;
+    container.innerHTML = steps.map((step, i) => {
+      const idx = statusOrder.indexOf(step.key);
+      let cls = '', icon = '○';
+      if (data.status === 'error' && idx === currentIdx) {
+        cls = 'error'; icon = '✕';
+      } else if (idx < currentIdx || data.status === 'done') {
+        cls = 'done'; icon = '✓';
+      } else if (idx === currentIdx) {
+        cls = 'active'; icon = '⟳';
+      }
+      return `<div class="update-step ${cls}">
+        <span class="update-step-icon">${icon}</span>
+        <span>${step.label}</span>
+      </div>`;
+    }).join('');
+
+    if (data.status === 'done') {
+      container.innerHTML += `<div class="update-step done" style="margin-top:.5rem;font-weight:600">
+        <span class="update-step-icon">✓</span>
+        <span>Recargando en 3 segundos...</span>
+      </div>`;
+    } else if (data.status === 'error') {
+      container.innerHTML += `<div class="update-step error" style="margin-top:.5rem">
+        <span class="update-step-icon">!</span>
+        <span>${data.status_msg}</span>
+      </div>`;
+    }
   }
 }
 

@@ -1266,6 +1266,53 @@ tbody tr:last-child td { border-bottom: none; }
 .dot-gray   { background: #94A3B8; }
 .dot-orange { background: #F97316; }
 
+/* ============================================================
+   UPDATE BADGE (header)
+   ============================================================ */
+.update-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .72rem;
+  font-weight: 700;
+  padding: .28rem .7rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  letter-spacing: .02em;
+  transition: background var(--transition);
+  animation: pulse-update 2s infinite;
+}
+.update-badge:hover { background: var(--accent-hover); }
+
+@keyframes pulse-update {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(249,115,22,0); }
+}
+
+/* ============================================================
+   UPDATE STEPS (modal progreso)
+   ============================================================ */
+.update-steps {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  margin-bottom: 1.25rem;
+  font-size: .82rem;
+}
+.update-step {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  color: var(--muted);
+}
+.update-step.done   { color: var(--success); }
+.update-step.active { color: var(--text); font-weight: 600; }
+.update-step.error  { color: var(--danger); }
+.update-step-icon { width: 16px; flex-shrink: 0; text-align: center; }
+
 .alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .875rem; }
 .alert-warning { background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); color: #92400e; }
 
