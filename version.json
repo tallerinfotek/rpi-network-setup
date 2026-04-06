@@ -1,5 +1,5 @@
 {
-    "version": "1.0.6",
+    "version": "1.0.7",
     "release_date": "2026-04-06",
-    "release_notes": "Fix crítico: el proceso se mataba a sí mismo al reiniciarse durante OTA. Ahora usa archivo marker + proceso desacoplado para completar la actualización correctamente."
+    "release_notes": "Nuevo: la UI ahora muestra la versión instalada en el header y en el dashboard. El stat card indica si hay una actualización disponible."
 }
