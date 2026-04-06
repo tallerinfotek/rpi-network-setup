@@ -92,31 +92,33 @@ def _parse_version(v: str):
 
 
 def _fetch_latest_release() -> Optional[Dict[str, Any]]:
-    """Consulta GitHub API y devuelve info del último release, o None si falla."""
+    """Consulta GitHub main branch: obtiene version.json y URL del zipball."""
     try:
+        # Fetch version.json from raw GitHub main branch
+        version_url = f"https://raw.githubusercontent.com/{GITHUB_REPO}/main/version.json"
         req = urllib.request.Request(
-            GITHUB_API_URL,
+            version_url,
             headers={"User-Agent": "rpi-network-setup-updater/1.0"},
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode())
+            version_data = json.loads(resp.read().decode())
 
-        tag = data.get("tag_name", "")
-        version = tag.lstrip("v")
+        version = version_data.get("version", "0.0.0").lstrip("vV")
+        release_notes = version_data.get("release_notes", "")
+        release_date = version_data.get("release_date", "")
 
-        # Ignorar pre-releases
-        if data.get("prerelease") or data.get("draft"):
-            return None
+        # Zipball URL for main branch
+        download_url = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/main.zip"
 
         return {
             "version":      version,
-            "tag":          tag,
-            "release_notes": data.get("body", ""),
-            "download_url": data.get("zipball_url", ""),
-            "published_at": data.get("published_at", ""),
+            "tag":          f"v{version}",
+            "release_notes": release_notes,
+            "download_url": download_url,
+            "published_at": release_date,
         }
     except Exception as exc:
-        logger.warning("Error consultando GitHub API: %s", exc)
+        logger.warning("Error consultando GitHub main branch: %s", exc)
         return None
 
 
@@ -162,7 +164,7 @@ def _do_check():
     if latest > local:
         _state["update_available"] = True
         _set_status("idle", f"Nueva versión disponible: v{release['version']}")
-        logger.info("[OTA] Update disponible: %s → %s", _state["local_version"], release["version"])
+        logger.info("[OTA] Update disponible: %s → v%s", _state["local_version"], release["version"])
     else:
         _state["update_available"] = False
         _set_status("idle", "El sistema está actualizado")

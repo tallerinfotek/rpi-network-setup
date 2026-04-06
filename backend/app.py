@@ -122,12 +122,12 @@ def require_json(f):
 # ---------------------------------------------------------------------------
 
 
-@app.route("/", defaults={"path": ""})
-@app.route("/<path:path>")
-def serve_frontend(path: str):
+def _serve_frontend_impl(path: str):
     """
     Sirve el frontend React/Vite compilado.
     Para rutas de la SPA que no son archivos reales, devuelve index.html.
+    NOTE: Esta función es llamada por serve_frontend() que está registrada
+    al FINAL de app.py para no capturar rutas /api/* antes de tiempo.
     """
     if _static_folder is None:
         return jsonify({
@@ -886,7 +886,7 @@ def internal_error(e):
 # OTA Updates
 # ---------------------------------------------------------------------------
 
-@app.route("/api/update/status")
+@app.route("/api/update/status", methods=["GET"])
 def update_status():
     return ok(update_manager.get_update_status())
 
@@ -906,8 +906,29 @@ def update_install():
 
 
 # ---------------------------------------------------------------------------
+# Catch-all frontend (DEBE IR AL FINAL para no capturar rutas /api/*)
+# ---------------------------------------------------------------------------
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_frontend(path: str):
+    return _serve_frontend_impl(path)
+
+
+# ---------------------------------------------------------------------------
 # Punto de entrada
 # ---------------------------------------------------------------------------
+
+# Inicia checker OTA y monitoreo de red tanto en modo __main__ como gunicorn/wsgi
+def _startup():
+    """Inicialización compartida entre __main__ y gunicorn."""
+    update_manager.start_background_checker()
+    sm.start_monitoring(interval=5)
+    logger.info("[STARTUP] OTA checker y monitoreo de red iniciados")
+
+
+# Arranque automático cuando se carga el módulo (gunicorn / wsgi)
+_startup()
 
 
 if __name__ == "__main__":
@@ -918,12 +939,6 @@ if __name__ == "__main__":
         SERVER_DEBUG,
         DEV_MODE,
     )
-
-    # Inicia checker de actualizaciones OTA
-    update_manager.start_background_checker()
-
-    # Inicia monitoreo de cambios en eth0
-    sm.start_monitoring(interval=5)
     logger.info("Servidor inicialmente en: %s", sm.get_server_status()["access_url"])
 
     try:
