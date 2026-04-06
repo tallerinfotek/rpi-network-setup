@@ -41,7 +41,8 @@ SERVICE_NAME      = "rpi-setup"
 # Archivos/carpetas que NO se tocan durante la actualización
 PRESERVE = {
     "server_config.json",
-    "backend/venv",
+    "backend/venv",      # Preservar venv (instalado localmente)
+    "venv",              # Alternativa si está en raíz
 }
 
 # Ruta raíz del proyecto (un nivel arriba de este archivo)
