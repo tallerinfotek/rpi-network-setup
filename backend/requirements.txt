@@ -1,0 +1,16 @@
+# Access Point Configurator - Dependencias Python
+# Instalar con: pip install -r requirements.txt
+
+# Framework web
+Flask>=3.0.0
+Flask-CORS>=4.0.0
+
+# Información del sistema (CPU, RAM, disco, etc.)
+psutil>=5.9.0
+
+# Utilidades HTTP (para desarrollo y pruebas)
+requests>=2.31.0
+
+# Servidor WSGI de producción (opcional, reemplaza el servidor de desarrollo de Flask)
+# En Raspberry Pi se puede usar gunicorn en lugar del servidor built-in
+gunicorn>=21.2.0

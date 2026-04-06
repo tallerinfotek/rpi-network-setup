@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/talle/Desktop/TecnoNuclear/**)",
+      "Bash(ls \"C:\\\\Users\\\\talle\\\\Desktop\\\\Access Point\\\\backend\"\" && echo \"---\" && ls \"C:UserstalleDesktopAccess Pointfrontend\"\")",
+      "Bash(python3 -m py_compile app.py server_manager.py network_manager.py config.py)",
+      "Bash(\"c:\\\\Users\\\\talle\\\\Desktop\\\\Access Point\\\\frontend\\\\style.css\")",
+      "Read(//c/Users/talle/Desktop/Aplicaciones Infotek/Test Radiocontrol/**)",
+      "Bash(scp \"C:\\\\Users\\\\talle\\\\Desktop\\\\Access Point\\\\frontend\\\\style.css\" \"C:\\\\Users\\\\talle\\\\Desktop\\\\Access Point\\\\frontend\\\\index.html\" \"C:\\\\Users\\\\talle\\\\Desktop\\\\Access Point\\\\frontend\\\\logo_infotek.png\" pi@192.168.1.40:/home/pi/rpi-setup/frontend/)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\talle\\Desktop\\Aplicaciones Infotek\\Test Radiocontrol\\static\\img"
+    ]
+  }
+}

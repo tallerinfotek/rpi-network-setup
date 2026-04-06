@@ -1,0 +1,29 @@
+[Unit]
+Description=Access Point Configurator - Web Server
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+WorkingDirectory=%SCRIPT_DIR%
+ExecStart=/bin/bash -c 'cd "%SCRIPT_DIR%" && "%VENV_DIR%/bin/python" app.py'
+
+Restart=on-failure
+RestartSec=5s
+
+Environment=PYTHONUNBUFFERED=1
+Environment=FLASK_ENV=production
+
+LimitNOFILE=65536
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=rpi-setup
+
+TimeoutStartSec=30
+
+[Install]
+WantedBy=multi-user.target

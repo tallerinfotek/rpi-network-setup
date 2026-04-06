@@ -1,0 +1,181 @@
+============================================================
+  RPI NETWORK SETUP - Access Point Configurator
+  Guia de uso
+============================================================
+
+
+------------------------------------------------------------
+PROBAR EN TU PC (Modo Desarrollo)
+------------------------------------------------------------
+
+1. Abri CMD y ejecuta:
+
+   cd "C:\Users\talle\Desktop\Access Point\backend"
+   pip install -r requirements.txt
+   python app.py
+
+2. Abre el browser en:
+
+   http://localhost:5000
+
+Nota: En la PC simula todo (interfaces, redes) sin tocar
+ningun archivo del sistema. Es solo para probar la UI.
+
+
+------------------------------------------------------------
+MANDAR EL PROGRAMA A LA RASPBERRY PI (desde tu PC)
+------------------------------------------------------------
+
+Opcion A - Por red (SCP), si ya tenes la RPI conectada:
+
+   scp -r "C:\Users\talle\Desktop\Access Point" pi@<IP_DE_LA_RPI>:/home/pi/
+
+   Ejemplo si la IP de la RPI es 192.168.1.100:
+   scp -r "C:\Users\talle\Desktop\Access Point" pi@192.168.1.100:/home/pi/
+
+Opcion B - Con rsync (mas rapido si solo queres actualizar):
+
+   rsync -avz "C:\Users\talle\Desktop\Access Point/" pi@<IP_DE_LA_RPI>:/home/pi/rpi-setup/
+
+Opcion C - Por USB (pendrive):
+
+   1. Copia la carpeta "Access Point" al pendrive
+   2. En la RPi: sudo mount /dev/sda1 /mnt
+   3.            cp -r /mnt/"Access Point" /home/pi/
+   4.            sudo umount /mnt
+
+
+------------------------------------------------------------
+INSTALAR EN LA RASPBERRY PI (desde tu PC via SSH)
+------------------------------------------------------------
+
+Tu Raspberry Pi esta en: 192.168.1.40
+Usuario:                 pi  (password por defecto: raspberry)
+
+1. Copiar los archivos a la RPI:
+
+   scp -r "C:\Users\talle\Desktop\Access Point" pi@192.168.1.40:/home/pi/
+
+2. Conectarte por SSH:
+
+   ssh pi@192.168.1.40
+
+3. Ir a la carpeta y ejecutar el instalador:
+
+   cd "/home/pi/Access Point/backend"
+   chmod +x install.sh uninstall.sh
+   sudo bash install.sh
+
+   (Opcionalmente, para cambiar la IP de acceso inicial):
+   sudo bash install.sh --fallback-ip 192.168.1.10
+
+4. Reiniciar:
+
+   sudo reboot
+
+   Luego de ~30 segundos, conecta un cable ethernet al mismo
+   switch/router que la RPI y abre http://192.168.1.2
+
+
+------------------------------------------------------------
+COMO FUNCIONA EL NUEVO SISTEMA
+------------------------------------------------------------
+
+Ya NO usa un WiFi AP propio. En cambio:
+
+1. Sin red en eth0:
+   - La app queda disponible en http://192.168.1.2
+   - (IP configurable con --fallback-ip o desde la web)
+   - Conecta tu PC con un cable al mismo switch que la RPI
+   - Entra a http://192.168.1.2 y configura la red
+
+2. Con red en eth0 (DHCP o IP fija):
+   - La app detecta la nueva IP automaticamente (~5 segundos)
+   - Ahora accedes por la IP real de la RPI en tu red
+   - La web te muestra la URL actualizada
+
+3. Si la red se cae:
+   - La app vuelve automaticamente a 192.168.1.2
+   - Podes reconectar y reconfigurar
+
+Cambiar la IP de acceso inicial desde la web:
+   POST /api/server/fallback-ip
+   {"fallback_ip": "192.168.1.10"}
+
+
+------------------------------------------------------------
+SI HABIA UNA APP VIEJA DE AP INSTALADA
+------------------------------------------------------------
+
+El instalador nuevo limpia automaticamente:
+  - Servicio rpi-setup viejo
+  - hostapd y dnsmasq (ya no se necesitan)
+  - IP fija de wlan0 (192.168.4.1) en dhcpcd.conf
+  - Procesos corriendo en el puerto 80
+
+Si queres limpiar manualmente sin reinstalar:
+
+   cd "/home/pi/Access Point/backend"
+   sudo bash uninstall.sh
+
+
+------------------------------------------------------------
+COMANDOS UTILES POST-INSTALACION
+------------------------------------------------------------
+
+Ver si el servicio esta corriendo:
+   sudo systemctl status rpi-setup
+
+Ver logs en tiempo real:
+   sudo journalctl -u rpi-setup -f
+
+Reiniciar solo el servicio:
+   sudo systemctl restart rpi-setup
+
+Ver la IP actual de la app:
+   curl http://192.168.1.2/api/server/status
+
+Cambiar IP de acceso inicial:
+   curl -X POST http://192.168.1.2/api/server/fallback-ip \
+     -H "Content-Type: application/json" \
+     -d '{"fallback_ip": "192.168.1.10"}'
+
+
+------------------------------------------------------------
+ESTRUCTURA DEL PROYECTO
+------------------------------------------------------------
+
+Access Point/
+  backend/
+    app.py              <- Servidor Flask (API REST)
+    server_manager.py   <- Monitoreo de IP y migracion automatica
+    network_manager.py  <- Gestion de eth/WiFi/IP
+    ap_manager.py       <- (legacy, no se usa activamente)
+    system_info.py      <- CPU, RAM, temperatura, hostname
+    config.py           <- Configuracion y constantes
+    requirements.txt    <- Dependencias Python
+    install.sh          <- Instalador para RPI
+    uninstall.sh        <- Limpieza/desinstalacion
+    rpi-setup.service   <- Servicio systemd
+  frontend/
+    (interfaz web)
+  server_config.json    <- IP fallback persistida (se crea al instalar)
+  COMO_USAR.txt         <- Esta guia
+
+
+------------------------------------------------------------
+REQUISITOS
+------------------------------------------------------------
+
+Raspberry Pi:
+  - Raspberry Pi 3, 4 o 5
+  - Raspberry Pi OS (Bullseye o Bookworm)
+  - Python 3.9+
+  - Cable ethernet conectado al mismo switch/router
+
+Para probar en PC:
+  - Python 3.9+
+  - pip
+  - Cualquier browser moderno
+
+============================================================

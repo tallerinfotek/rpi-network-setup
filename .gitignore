@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+*.egg-info/
+
+# Logs
+*.log
+/var/log/
+
+# Configuración local (no va al repo)
+server_config.json
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temporales
+*.tmp
+*.bak
+*.swp

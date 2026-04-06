@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Configurador de Red para Raspberry Pi - TecnoNuclear / Infotek Ingeniería" />
+  <title>RPI Network Setup</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ============================================================
+     TOAST CONTAINER
+     ============================================================ -->
+<div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+<!-- ============================================================
+     MODAL OVERLAY
+     ============================================================ -->
+<div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div id="modal-icon" class="modal-icon">!</div>
+    <div id="modal-title" class="modal-title">Confirmar acción</div>
+    <div id="modal-body"  class="modal-body">¿Estás seguro?</div>
+    <div class="modal-actions">
+      <button id="modal-cancel"  class="btn btn-ghost">Cancelar</button>
+      <button id="modal-confirm" class="btn btn-primary">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- WiFi Connect Modal -->
+<div id="wifi-modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" style="display:none">
+  <div class="modal">
+    <div class="modal-title" style="margin-bottom:0">Conectar a WiFi</div>
+    <div class="modal-body">
+      <div style="margin-bottom:.75rem">
+        <strong id="wifi-modal-ssid"></strong>
+        <span id="wifi-modal-security" class="text-muted text-sm" style="margin-left:.5rem"></span>
+      </div>
+      <div id="wifi-modal-pw-field" class="form-group">
+        <label class="form-label">Contraseña</label>
+        <div style="display:flex;gap:.5rem">
+          <input id="wifi-modal-pw" type="password" class="form-control" placeholder="••••••••" autocomplete="current-password" />
+          <button id="wifi-modal-pw-toggle" class="btn-addon btn btn-ghost" type="button">Ver</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button id="wifi-modal-cancel" class="btn btn-ghost">Cancelar</button>
+      <button id="wifi-modal-connect" class="btn btn-primary">
+        <div class="btn-spinner"></div>
+        <span class="btn-text">Conectar</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+<div class="app-shell">
+
+  <!-- ===== HEADER ===== -->
+  <header class="app-header">
+    <div class="header-brand">
+      <button id="hamburger" class="hamburger" aria-label="Menú">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="3" y1="6"  x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <img src="logo_infotek.png" alt="Infotek" class="header-logo">
+      <div class="header-brand-text">
+        <span class="header-brand-name">Infotek Ingeniería</span>
+        <span class="header-brand-sub">RPI Network Setup</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="hostname-badge">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <span id="header-hostname">raspberrypi</span>
+      </div>
+      <div id="connection-badge" class="connection-badge disconnected">
+        <span class="dot"></span>
+        <span class="badge-text">Conectando...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Principal</div>
+
+      <div class="nav-item active" data-section="dashboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Dashboard
+        <span class="pending-dot" data-for="dashboard"></span>
+      </div>
+
+      <div class="nav-section-label">Red</div>
+
+      <div class="nav-item" data-section="ethernet">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="8" width="6" height="8" rx="1"/>
+          <rect x="9" y="8" width="6" height="8" rx="1"/>
+          <rect x="16" y="8" width="6" height="8" rx="1"/>
+          <line x1="5"  y1="8" x2="5"  y2="6"/>
+          <line x1="12" y1="8" x2="12" y2="4"/>
+          <line x1="19" y1="8" x2="19" y2="6"/>
+          <line x1="5"  y1="6" x2="19" y2="6"/>
+          <line x1="12" y1="4" x2="12" y2="6"/>
+        </svg>
+        Ethernet (LAN)
+        <span class="pending-dot" data-for="ethernet"></span>
+      </div>
+
+      <div class="nav-item" data-section="wifi">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+          <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+          <path d="M10.54 16a5 5 0 0 1 2.92 0"/>
+          <circle cx="12" cy="20" r="1" fill="currentColor"/>
+        </svg>
+        WiFi
+        <span class="pending-dot" data-for="wifi"></span>
+      </div>
+
+      <div class="nav-item" data-section="ap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a1 1 0 0 1 1 1v10a1 1 0 0 1-2 0V3a1 1 0 0 1 1-1z"/><path d="M8 6.5A6 6 0 0 0 6 11"/><path d="M16 6.5A6 6 0 0 1 18 11"/><path d="M5 4A10 10 0 0 0 3 11"/><path d="M19 4a10 10 0 0 1 2 7"/><line x1="12" y1="13" x2="8" y2="21"/><line x1="12" y1="13" x2="16" y2="21"/>
+        </svg>
+        Access Point
+        <span class="pending-dot" data-for="ap"></span>
+      </div>
+
+      <div class="nav-section-label">Gestión</div>
+
+      <div class="nav-item" data-section="dhcp">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        DHCP &amp; Clientes
+        <span class="pending-dot" data-for="dhcp"></span>
+      </div>
+
+      <div class="nav-item" data-section="system">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+          <path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>
+        </svg>
+        Sistema
+        <span class="pending-dot"></span>
+      </div>
+
+      <div class="nav-item" data-section="debug">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        Debug WiFi
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Sidebar overlay for mobile -->
+  <div class="sidebar-overlay"></div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <!-- ============================================================
+         PENDING BANNER
+         ============================================================ -->
+    <div id="pending-banner" class="pending-banner">
+      <span class="pending-banner-icon">!</span>
+      <div class="pending-banner-text">
+        Hay cambios pendientes sin aplicar
+        <span id="pending-count-text"></span>
+      </div>
+      <button class="btn btn-accent btn-sm btn-apply-all">
+        <div class="btn-spinner"></div>
+        <span class="btn-text">Aplicar ahora</span>
+      </button>
+    </div>
+
+    <!-- ============================================================
+         SECTION: DASHBOARD
+         ============================================================ -->
+    <section id="section-dashboard" class="section active">
+      <div class="section-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        Dashboard
+      </div>
+
+      <!-- Stats row -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">Hostname</div>
+          <div class="stat-value" id="dash-hostname">—</div>
+          <div class="stat-sub">Nombre del dispositivo</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Access Point</div>
+          <div class="stat-value" id="dash-ap-status">—</div>
+          <div class="stat-sub"><span id="dash-ap-badge" class="badge badge-danger">OFF</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Temperatura CPU</div>
+          <div class="stat-value" id="dash-temp">—</div>
+          <div class="stat-sub">Núcleo principal</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Memoria RAM</div>
+          <div class="stat-value" style="font-size:1rem" id="dash-ram">—</div>
+          <div class="stat-sub">Usada / Total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Uptime</div>
+          <div class="stat-value" id="dash-uptime">—</div>
+          <div class="stat-sub">Tiempo activo</div>
+        </div>
+      </div>
+
+      <!-- Interfaces -->
+      <div class="card">
+        <div class="card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          </svg>
+          Interfaces de Red
+        </div>
+        <div id="iface-cards" class="iface-grid">
+          <div class="loading-row"><div class="spinner"></div> Cargando interfaces...</div>
+        </div>
+      </div>
+
+      <!-- Apply all -->
+      <div style="display:flex;justify-content:flex-end;margin-top:0.5rem">
+        <button class="btn btn-accent btn-lg btn-apply-all">
+          <div class="btn-spinner"></div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span class="btn-text">Aplicar todos los cambios</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECTION: ETHERNET
+         ============================================================ -->
+    <section id="section-ethernet" class="section">
+      <div class="section-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+          <rect x="2" y="8" width="6" height="8" rx="1"/>
+          <rect x="9" y="8" width="6" height="8" rx="1"/>
+          <rect x="16" y="8" width="6" height="8" rx="1"/>
+          <line x1="5"  y1="8" x2="5"  y2="6"/>
+          <line x1="12" y1="8" x2="12" y2="4"/>
+          <line x1="19" y1="8" x2="19" y2="6"/>
+          <line x1="5"  y1="6" x2="19" y2="6"/>
+          <line x1="12" y1="4" x2="12" y2="6"/>
+        </svg>
+        Ethernet (LAN)
+      </div>
+      <div id="eth-status-badge" class="network-status-bar">
+        <span class="status-chip" id="eth-chip-ip"><span class="dot dot-gray"></span> Sin IP</span>
+        <span class="status-chip" id="eth-chip-internet"><span class="dot dot-gray"></span> Sin internet</span>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Seleccionar interfaz</div>
+        <div class="form-group">
+          <label class="form-label" for="eth-iface-select">Interfaz Ethernet</label>
+          <select id="eth-iface-select" class="form-control">
+            <option value="eth0">eth0</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <div class="form-label">Modo de configuración IP</div>
+          <div class="segment-control">
+            <button class="segment-btn active" id="eth-mode-btn-dhcp" data-mode="dhcp">DHCP (automático)</button>
+            <button class="segment-btn"        id="eth-mode-btn-static" data-mode="static">IP Estática</button>
+          </div>
+        </div>
+
+        <!-- DHCP info -->
+        <div id="eth-dhcp-fields">
+          <div class="form-group">
+            <label class="form-label" for="eth-dhcp-ip">IP obtenida (DHCP)</label>
+            <input id="eth-dhcp-ip" type="text" class="form-control" readonly placeholder="Esperando asignación DHCP..." />
+            <span class="form-hint">La dirección es asignada automáticamente por el router</span>
+          </div>
+        </div>
+
+        <!-- Static IP fields -->
+        <div id="eth-static-fields" class="hidden">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="eth-ip">Dirección IP</label>
+              <input id="eth-ip" type="text" class="form-control" placeholder="192.168.1.100" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="eth-mask">Máscara de red</label>
+              <input id="eth-mask" type="text" class="form-control" placeholder="255.255.255.0" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="eth-gw">Gateway (puerta de enlace)</label>
+            <input id="eth-gw" type="text" class="form-control" placeholder="192.168.1.1" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="eth-dns1">DNS Primario</label>
+              <input id="eth-dns1" type="text" class="form-control" placeholder="8.8.8.8" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="eth-dns2">DNS Secundario</label>
+              <input id="eth-dns2" type="text" class="form-control" placeholder="8.8.4.4" />
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:.5rem">
+          <button id="eth-save-btn" class="btn btn-primary">
+            <div class="btn-spinner"></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            <span class="btn-text">Guardar configuración</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECTION: WIFI CLIENT
+         ============================================================ -->
+    <section id="section-wifi" class="section">
+      <div class="section-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+          <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+          <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+          <path d="M10.54 16a5 5 0 0 1 2.92 0"/>
+          <circle cx="12" cy="20" r="1" fill="var(--primary)"/>
+        </svg>
+        WiFi
+      </div>
+      <div id="wifi-client-status-badge" class="network-status-bar">
+        <span class="status-chip" id="wifi-chip-ip"><span class="dot dot-gray"></span> Sin IP</span>
+        <span class="status-chip" id="wifi-chip-internet"><span class="dot dot-gray"></span> Sin internet</span>
+        <span class="status-chip" id="wifi-chip-signal"><span class="dot dot-gray"></span> Sin señal</span>
+      </div>
+
+      <!-- Current status -->
+      <div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+          Estado de conexión WiFi
+          <button id="wifi-refresh-btn" class="btn btn-ghost btn-sm">
+            <div class="btn-spinner"></div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            <span class="btn-text">Actualizar</span>
+          </button>
+        </div>
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+          <div id="wifi-current-status">
+            <span class="badge badge-danger">● Desconectado</span>
+          </div>
+          <div class="form-group" style="margin:0;flex:1;min-width:180px">
+            <label class="form-label" for="wifi-iface-select">Interfaz WiFi</label>
+            <select id="wifi-iface-select" class="form-control">
+              <option value="wlan0">wlan0</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scan -->
+      <div class="card">
+        <div class="card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+            <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+            <path d="M10.54 16a5 5 0 0 1 2.92 0"/>
+            <circle cx="12" cy="20" r="1" fill="currentColor"/>
+          </svg>
+          Escaneo de redes disponibles
+          <small>Selecciona una red para conectarte</small>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+          <div id="wifi-network-list" class="wifi-list" style="width:100%">
+            <div class="empty-state">
+              <div class="empty-state-text">Presiona "Escanear" para buscar redes</div>
+            </div>
+          </div>
+        </div>
+
+        <button id="wifi-scan-btn" class="btn btn-ghost">
+          <div class="btn-spinner"></div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/>
+            <polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+          <span class="btn-text">Escanear redes WiFi</span>
+        </button>
+      </div>
+
+      <!-- Connect form -->
+      <div class="card">
+        <div class="card-title">Conectar a red</div>
+
+        <div class="form-group">
+          <label class="form-label" for="wifi-ssid-input">SSID (nombre de red)</label>
+          <input id="wifi-ssid-input" type="text" class="form-control" placeholder="Nombre de la red WiFi" />
+        </div>
+
+        <div id="wifi-pw-field" class="form-group">
+          <label class="form-label" for="wifi-pw">Contraseña WiFi</label>
+          <div class="input-group">
+            <input id="wifi-pw" type="password" class="form-control" placeholder="••••••••" autocomplete="current-password" />
+            <button id="wifi-pw-toggle" class="btn-addon" type="button" title="Mostrar/ocultar">Ver</button>
+          </div>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="form-group">
+          <div class="form-label">Modo de IP para esta interfaz</div>
+          <div class="segment-control">
+            <button class="segment-btn active" id="wifi-mode-btn-dhcp"   data-mode="dhcp">DHCP</button>
+            <button class="segment-btn"        id="wifi-mode-btn-static" data-mode="static">IP Estática</button>
+          </div>
+        </div>
+
+        <div id="wifi-dhcp-fields">
+          <span class="form-hint">La IP será asignada automáticamente por el punto de acceso.</span>
+        </div>
+
+        <div id="wifi-static-fields" class="hidden">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="wifi-static-ip">Dirección IP</label>
+              <input id="wifi-static-ip" type="text" class="form-control" placeholder="192.168.1.50" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="wifi-static-mask">Máscara</label>
+              <input id="wifi-static-mask" type="text" class="form-control" placeholder="255.255.255.0" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="wifi-static-gw">Gateway</label>
+              <input id="wifi-static-gw" type="text" class="form-control" placeholder="192.168.1.1" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="wifi-static-dns1">DNS</label>
+              <input id="wifi-static-dns1" type="text" class="form-control" placeholder="8.8.8.8" />
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:.5rem">
+          <button id="wifi-save-btn" class="btn btn-primary">
+            <div class="btn-spinner"></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span class="btn-text">Guardar y conectar</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECTION: ACCESS POINT
+         ============================================================ -->
+    <section id="section-ap" class="section">
+      <div class="section-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+          <path d="M12 2a1 1 0 0 1 1 1v10a1 1 0 0 1-2 0V3a1 1 0 0 1 1-1z"/><path d="M8 6.5A6 6 0 0 0 6 11"/><path d="M16 6.5A6 6 0 0 1 18 11"/><path d="M5 4A10 10 0 0 0 3 11"/><path d="M19 4a10 10 0 0 1 2 7"/><line x1="12" y1="13" x2="8" y2="21"/><line x1="12" y1="13" x2="16" y2="21"/>
+        </svg>
+        Configuración del Access Point
+      </div>
+
+      <!-- Advertencia modo AP -->
+      <div class="alert alert-warning" id="ap-wifi-warning" style="display:none">
+        <strong>Atención:</strong> Activar el AP desconecta wlan0 del WiFi cliente. Al desactivarlo, wlan0 intentará reconectarse automáticamente.
+      </div>
+
+      <!-- AP ON/OFF -->
+      <div class="ap-status-toggle">
+        <div class="ap-status-label">
+          <div class="ap-status-title">Access Point (Hotspot)</div>
+          <div class="ap-status-sub" id="ap-status-sub">Access Point detenido</div>
+        </div>
+        <label class="toggle-switch toggle-switch-lg" title="Activar/desactivar AP">
+          <input type="checkbox" id="ap-toggle" />
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+
+      <!-- Basic config -->
+      <div class="card">
+        <div class="card-title">Configuración básica</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="ap-iface-select">Interfaz del AP</label>
+            <select id="ap-iface-select" class="form-control">
+              <option value="wlan0">wlan0</option>
+              <option value="wlan1">wlan1</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ap-band">Banda de frecuencia</label>
+            <select id="ap-band" class="form-control">
+              <option value="g">2.4 GHz (mayor alcance)</option>
+              <option value="a">5 GHz (mayor velocidad)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ap-ssid">SSID (nombre de la red)</label>
+          <div class="input-group">
+            <input id="ap-ssid" type="text" class="form-control" placeholder="RPI-Setup" maxlength="32" />
+            <button id="ap-copy-ssid" class="btn-addon" type="button" title="Copiar SSID">Copiar</button>
+          </div>
+          <span class="form-hint">Máximo 32 caracteres. Este es el nombre que verán los dispositivos.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ap-password">Contraseña (WPA2)</label>
+          <div class="input-group">
+            <input id="ap-password" type="password" class="form-control" placeholder="Dejar vacío para red abierta" autocomplete="new-password" />
+            <button id="ap-pw-toggle" class="btn-addon" type="button" title="Mostrar/ocultar">Ver</button>
+          </div>
+          <span class="form-hint">Mínimo 8 caracteres si se establece. Vacío = red sin contraseña.</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="ap-channel">Canal WiFi</label>
+            <select id="ap-channel" class="form-control">
+              <option value="0">Auto</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6" selected>6 (recomendado)</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Opciones adicionales</label>
+            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;margin-top:.5rem">
+              <input type="checkbox" id="ap-hidden" style="width:16px;height:16px;accent-color:var(--primary)" />
+              <span class="form-label" style="margin:0">Red oculta (hidden SSID)</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Network / DHCP config -->
+      <div class="card">
+        <div class="card-title">Red del Access Point</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="ap-ip">IP del Access Point</label>
+            <input id="ap-ip" type="text" class="form-control" placeholder="192.168.4.1" value="192.168.4.1" />
+            <span class="form-hint">Gateway que verán los clientes conectados</span>
+          </div>
+          <div></div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="ap-dhcp-start">Rango DHCP — inicio</label>
+            <input id="ap-dhcp-start" type="text" class="form-control" placeholder="192.168.4.10" value="192.168.4.10" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ap-dhcp-end">Rango DHCP — fin</label>
+            <input id="ap-dhcp-end" type="text" class="form-control" placeholder="192.168.4.100" value="192.168.4.100" />
+          </div>
+        </div>
+        <span class="form-hint" style="display:block;margin-top:-.5rem;margin-bottom:1rem">
+          El servidor DHCP asignará IPs dentro de este rango a los clientes conectados al AP.
+        </span>
+      </div>
+
+      <!-- Config preview -->
+      <div class="card">
+        <div class="card-title">
+          Vista previa de configuración generada
+          <small style="margin-left:auto">
+            <button id="ap-preview-btn" class="btn btn-ghost btn-sm" type="button">Actualizar</button>
+          </small>
+        </div>
+        <pre id="ap-config-preview" class="config-preview"><!-- generated by JS --></pre>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:.5rem">
+        <button id="ap-save-btn" class="btn btn-primary">
+          <div class="btn-spinner"></div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          <span class="btn-text">Guardar configuración AP</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECTION: DHCP & CLIENTS
+         ============================================================ -->
+    <section id="section-dhcp" class="section">
+      <div class="section-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        DHCP &amp; Clientes conectados
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          Clientes conectados al Access Point
+          <small id="dhcp-client-count">0 cliente(s)</small>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
+          <button id="dhcp-refresh-btn" class="btn btn-ghost btn-sm">
+            <div class="btn-spinner"></div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+            <span class="btn-text">Actualizar</span>
+          </button>
+        </div>
+
+        <div id="dhcp-clients-table">
+          <div class="loading-row"><div class="spinner"></div> Cargando...</div>
+        </div>
+      </div>
+
+      <!-- Info card -->
+      <div class="card">
+        <div class="card-title">Información de la red AP</div>
+        <div class="form-row">
+          <div>
+            <div class="form-label">Rango de asignación</div>
+            <div class="font-mono text-sm" style="margin-top:.25rem;color:var(--text)">
+              192.168.4.10 — 192.168.4.100
+            </div>
+          </div>
+          <div>
+            <div class="form-label">Tiempo de lease</div>
+            <div class="font-mono text-sm" style="margin-top:.25rem;color:var(--text)">12 horas</div>
+          </div>
+          <div>
+            <div class="form-label">Gateway del AP</div>
+            <div class="font-mono text-sm" style="margin-top:.25rem;color:var(--text)">192.168.4.1</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECTION: SYSTEM
+         ============================================================ -->
+    <section id="section-system" class="section">
+      <div class="section-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+        </svg>
+        Sistema
+      </div>
+
+      <!-- Hostname -->
+      <div class="card">
+        <div class="card-title">Nombre del dispositivo (Hostname)</div>
+        <div class="form-group">
+          <label class="form-label" for="sys-hostname">Hostname</label>
+          <div class="input-group">
+            <input id="sys-hostname" type="text" class="form-control"
+                   placeholder="raspberrypi"
+                   pattern="[a-zA-Z0-9\-]+"
+                   maxlength="63" />
+            <button id="sys-hostname-btn" class="btn-addon btn btn-primary btn-sm" type="button"
+                    style="border-radius:0 var(--radius-input) var(--radius-input) 0;border:none;padding:.5rem .875rem">
+              <div class="btn-spinner"></div>
+              <span class="btn-text">Guardar</span>
+            </button>
+          </div>
+          <span class="form-hint">Solo letras, números y guiones. Requiere reinicio para ser efectivo.</span>
+        </div>
+      </div>
+
+      <!-- Resources -->
+      <div class="card">
+        <div class="card-title">Recursos del sistema</div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.5rem">
+          <span class="text-sm">
+            Uptime: <strong id="sys-uptime">—</strong>
+          </span>
+          <span class="badge badge-primary">Actualización automática cada 5s</span>
+        </div>
+
+        <!-- CPU -->
+        <div class="progress-group">
+          <div class="progress-header">
+            <span class="progress-label">CPU</span>
+            <span class="progress-value" id="sys-cpu-val">—</span>
+          </div>
+          <div class="progress-track">
+            <div id="sys-cpu-bar" class="progress-bar" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- RAM -->
+        <div class="progress-group">
+          <div class="progress-header">
+            <span class="progress-label">Memoria RAM</span>
+            <span class="progress-value" id="sys-ram-val">—</span>
+          </div>
+          <div class="progress-track">
+            <div id="sys-ram-bar" class="progress-bar cyan" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Temperature -->
+        <div class="progress-group">
+          <div class="progress-header">
+            <span class="progress-label">Temperatura CPU</span>
+            <span class="progress-value" id="sys-temp-val">—</span>
+          </div>
+          <div class="progress-track">
+            <div id="sys-temp-bar" class="progress-bar" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Disk -->
+        <div class="progress-group">
+          <div class="progress-header">
+            <span class="progress-label">Almacenamiento (disco)</span>
+            <span class="progress-value" id="sys-disk-val">—</span>
+          </div>
+          <div class="progress-track">
+            <div id="sys-disk-bar" class="progress-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Servicios -->
+      <div class="card">
+        <div class="card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          Servicios
+        </div>
+        <div id="services-list" class="services-list">
+          <div class="service-item" id="svc-nodered">
+            <div class="service-info">
+              <span class="service-name">Node-RED</span>
+              <span class="service-port text-muted">:1880</span>
+            </div>
+            <span class="badge badge-gray" id="svc-nodered-badge">—</span>
+          </div>
+          <div class="service-item" id="svc-n8n">
+            <div class="service-info">
+              <span class="service-name">n8n</span>
+              <span class="service-port text-muted">:5678</span>
+            </div>
+            <span class="badge badge-gray" id="svc-n8n-badge">—</span>
+          </div>
+          <div class="service-item" id="svc-grafana">
+            <div class="service-info">
+              <span class="service-name">Grafana</span>
+              <span class="service-port text-muted">:3000</span>
+            </div>
+            <span class="badge badge-gray" id="svc-grafana-badge">—</span>
+          </div>
+          <div class="service-item" id="svc-postgresql">
+            <div class="service-info">
+              <span class="service-name">PostgreSQL</span>
+              <span class="service-port text-muted">:5432</span>
+            </div>
+            <span class="badge badge-gray" id="svc-postgresql-badge">—</span>
+          </div>
+          <div class="service-item" id="svc-mqtt">
+            <div class="service-info">
+              <span class="service-name">MQTT (Mosquitto)</span>
+              <span class="service-port text-muted">:1883</span>
+            </div>
+            <span class="badge badge-gray" id="svc-mqtt-badge">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Operations Log -->
+      <div class="card">
+        <div class="card-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          Log de operaciones
+        </div>
+        <div id="sys-log" class="log-box">
+          <div class="log-line">
+            <span class="log-time">--:--:--</span>
+            <span class="log-info">Interfaz lista. Conectando al backend...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activar Access Point -->
+      <div class="card" style="border:1px solid rgba(6,182,212,.3);background:rgba(6,182,212,.04)">
+        <div class="card-title" style="color:var(--accent)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+            <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+            <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+            <path d="M10.54 17.09A6 6 0 0 1 13.5 17"/>
+            <path d="M8.53 16.11a8 8 0 0 1 6.95 0"/>
+            <line x1="12" y1="20" x2="12.01" y2="20"/>
+          </svg>
+          Modo Access Point (configuración de planta)
+        </div>
+        <p class="text-sm text-muted" style="margin-bottom:1rem">
+          Activa el Access Point WiFi <strong>RPI-Setup</strong> para conectarte y reconfigurar la red desde cero.
+          El configurador web seguirá activo en la IP de red actual mientras el AP esté activado.
+        </p>
+        <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+          <button id="sys-ap-activate-btn" class="btn btn-primary">
+            <div class="btn-spinner"></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+              <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+              <line x1="12" y1="20" x2="12.01" y2="20"/>
+            </svg>
+            <span class="btn-text">Activar Access Point</span>
+          </button>
+          <span id="sys-ap-status-text" class="text-sm text-muted"></span>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="card" style="border:1px solid rgba(239,68,68,.25);background:rgba(239,68,68,.03)">
+        <div class="card-title" style="color:var(--danger)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          Zona de peligro
+        </div>
+        <p class="text-sm text-muted" style="margin-bottom:1rem">
+          Las siguientes acciones son irreversibles o causarán interrupciones del servicio.
+        </p>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+          <button id="sys-reboot-btn" class="btn btn-danger">
+            <div class="btn-spinner"></div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            <span class="btn-text">Reiniciar Raspberry Pi</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         SECTION: DEBUG WIFI
+         ============================================================ -->
+    <section id="section-debug" class="section">
+      <div class="section-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        Debug WiFi
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+          Log de conexión WiFi
+          <button id="debug-refresh-btn" class="btn btn-ghost btn-sm">
+            <div class="btn-spinner"></div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            <span class="btn-text">Actualizar</span>
+          </button>
+        </div>
+        <div id="debug-log-content" class="log-box" style="max-height:400px;overflow-y:auto">
+          <div class="loading-row"><div class="spinner"></div> Cargando logs...</div>
+        </div>
+        <div style="margin-top:1rem">
+          <span class="form-hint">Ubicación del log: /var/log/wifi_connect.log</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Comandos de diagnóstico</div>
+        <p class="text-sm text-muted" style="margin-bottom:1rem">
+          Ejecuta estos comandos en la Raspberry Pi para diagnóstico avanzado:
+        </p>
+        <pre class="config-preview" style="font-size:0.8rem"># Ver conexiones WiFi guardadas
+nmcli connection show
+
+# Ver estado de interfaces
+nmcli device show
+
+# Ver logs de NetworkManager
+journalctl -u NetworkManager -f -n 50
+
+# Ver log de WiFi
+cat /var/log/wifi_connect.log</pre>
+      </div>
+    </section>
+
+  </main><!-- /main-content -->
+
+</div><!-- /app-shell -->
+
+<script src="app.js"></script>
+</body>
+</html>
