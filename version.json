@@ -1,5 +1,5 @@
 {
-    "release_notes":  "Sistema OTA desde main branch - Cambio de Releases a consulta directa de main branch",
-    "version":  "1.0.4",
-    "release_date":  "2026-04-06"
+    "version": "1.0.5",
+    "release_date": "2026-04-06",
+    "release_notes": "Fix: endpoint /api/update/status retornaba HTML 404 (catch-all de frontend interceptaba rutas /api/*). Fix: version aparecia como vV1.0.4 en lugar de v1.0.4. Fix: OTA checker ahora inicia tambien en modo gunicorn/wsgi."
 }
