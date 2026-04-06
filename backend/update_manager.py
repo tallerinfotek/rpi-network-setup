@@ -38,6 +38,7 @@ BACKUP_DIR        = "/tmp/rpi-setup-backup"
 DOWNLOAD_PATH     = "/tmp/rpi-update.zip"
 EXTRACT_PATH      = "/tmp/rpi-update-extracted"
 SERVICE_NAME      = "rpi-setup"
+UPDATE_MARKER     = "/tmp/rpi-update-completed"   # Marker de update exitoso para el nuevo proceso
 
 # Archivos/carpetas que NO se tocan durante la actualización
 PRESERVE = {
@@ -273,22 +274,31 @@ def _do_install():
                 logger.error("[OTA] Error recreando venv: %s", exc)
                 raise
 
-        # 6. Reiniciar servicio
-        _set_status("restarting", "Reiniciando servicio...")
-        subprocess.run(["sudo", "systemctl", "restart", SERVICE_NAME],
-                       capture_output=True, timeout=30)
+        # 6. Escribir marker ANTES de reiniciar para que el nuevo proceso sepa que
+        #    la actualización fue exitosa. El proceso actual morirá durante el restart.
+        try:
+            with open(UPDATE_MARKER, "w") as mf:
+                json.dump({
+                    "version":   new_version,
+                    "timestamp": datetime.now().isoformat(),
+                }, mf)
+            logger.info("[OTA] Marker de update escrito: %s", UPDATE_MARKER)
+        except Exception as exc:
+            logger.warning("[OTA] No se pudo escribir marker: %s", exc)
 
-        # 7. Verificar que levantó
-        time.sleep(RESTART_WAIT_S)
-        result = subprocess.run(["systemctl", "is-active", SERVICE_NAME],
-                                capture_output=True, text=True)
-        if result.stdout.strip() == "active":
-            _state["local_version"]   = new_version
-            _state["update_available"] = False
-            _set_status("done", f"Actualizado a v{new_version} correctamente")
-            logger.info("[OTA] Actualización exitosa a v%s", new_version)
-        else:
-            raise RuntimeError("El servicio no levantó después del restart")
+        # 7. Reiniciar servicio con proceso DESACOPLADO (start_new_session=True)
+        #    para que el restart sobreviva la muerte del proceso actual.
+        #    Usamos un delay de 2s para que el marker quede en disco antes de morir.
+        _set_status("restarting", "Reiniciando servicio...")
+        subprocess.Popen(
+            ["bash", "-c", f"sleep 2 && sudo systemctl restart {SERVICE_NAME}"],
+            start_new_session=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        logger.info("[OTA] Restart programado — este proceso morirá en breve")
+        # El proceso muere aquí cuando systemd lo termina.
+        # El nuevo proceso leerá el marker al arrancar.
 
     except Exception as exc:
         logger.error("[OTA] Error durante instalación: %s", exc)
@@ -389,9 +399,34 @@ def install_update():
     return True
 
 
+def _check_post_update_marker():
+    """Al arrancar, verifica si hay un marker de actualización exitosa del ciclo anterior."""
+    if not os.path.exists(UPDATE_MARKER):
+        return
+    try:
+        with open(UPDATE_MARKER, "r") as mf:
+            data = json.load(mf)
+        new_version = data.get("version", "?")
+        _state["status"]           = "done"
+        _state["status_msg"]       = f"Actualizado a v{new_version} correctamente"
+        _state["update_available"] = False
+        _state["local_version"]    = new_version
+        _state["checked_at"]       = data.get("timestamp")
+        os.remove(UPDATE_MARKER)
+        logger.info("[OTA] ✅ Arranque post-update detectado — versión v%s instalada", new_version)
+    except Exception as exc:
+        logger.warning("[OTA] Error leyendo marker post-update: %s", exc)
+        try:
+            os.remove(UPDATE_MARKER)
+        except Exception:
+            pass
+
+
 def start_background_checker():
     """Inicia el thread de polling. Llamar una vez al arrancar la app."""
     _state["local_version"] = _read_local_version()
+    # Detectar si arrancamos después de una actualización exitosa
+    _check_post_update_marker()
     t = threading.Thread(target=_check_loop, daemon=True, name="ota-checker")
     t.start()
     logger.info("[OTA] Checker iniciado. Versión local: %s", _state["local_version"])
