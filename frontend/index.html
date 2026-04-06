@@ -90,6 +90,12 @@
         </svg>
         <span id="header-hostname">raspberrypi</span>
       </div>
+      <div class="hostname-badge" id="version-badge" title="Versión instalada" style="opacity:.7;font-family:monospace;letter-spacing:.02em">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+        </svg>
+        <span id="header-version">v—</span>
+      </div>
       <div id="connection-badge" class="connection-badge disconnected">
         <span class="dot"></span>
         <span class="badge-text">Conectando...</span>
@@ -254,6 +260,11 @@
           <div class="stat-label">Hostname</div>
           <div class="stat-value" id="dash-hostname">—</div>
           <div class="stat-sub">Nombre del dispositivo</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Versión</div>
+          <div class="stat-value" id="dash-version" style="font-size:1.1rem;font-family:monospace">—</div>
+          <div class="stat-sub" id="dash-version-sub">Software instalado</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Access Point</div>

@@ -1497,6 +1497,23 @@ class NetworkConfigUI {
     } else {
       badge.classList.add('hidden');
     }
+
+    // Actualizar badge de versión en el header
+    const localVer = data.local_version;
+    if (localVer) {
+      const headerVer = document.getElementById('header-version');
+      if (headerVer) headerVer.textContent = `v${localVer}`;
+
+      // Actualizar stat card en dashboard
+      const dashVer    = document.getElementById('dash-version');
+      const dashVerSub = document.getElementById('dash-version-sub');
+      if (dashVer) dashVer.textContent = `v${localVer}`;
+      if (dashVerSub) {
+        dashVerSub.innerHTML = data.update_available
+          ? `<span style="color:var(--accent)">↑ v${data.latest_version} disponible</span>`
+          : `<span style="color:var(--success,#22c55e)">✓ Al día</span>`;
+      }
+    }
   }
 
   _openUpdateModal() {
