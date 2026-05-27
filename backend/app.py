@@ -763,6 +763,7 @@ MONITORED_SERVICES = [
     {"name": "Grafana",     "port": 3000, "id": "grafana"},
     {"name": "PostgreSQL",  "port": 5432, "id": "postgresql"},
     {"name": "MQTT",        "port": 1883, "id": "mqtt"},
+    {"name": "InfluxDB",    "port": 8086, "id": "influxdb"},
 ]
 
 @app.route("/api/services/status", methods=["GET"])

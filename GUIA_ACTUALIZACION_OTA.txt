@@ -1,0 +1,72 @@
+============================================================
+GUÍA DE ACTUALIZACIÓN DEL SISTEMA OTA (OVER-THE-AIR)
+============================================================
+
+Este sistema permite actualizar la Raspberry Pi (RPi) de forma automática 
+simplemente subiendo los cambios a GitHub. Ya no es necesario usar SSH 
+o entrar a la consola de la RPi para actualizar el código.
+
+SITIO DEL REPOSITORIO:
+https://github.com/tallerinfotek/rpi-network-setup
+
+============================================================
+1. FLUJO DE TRABAJO (PROCEDIMIENTO PASO A PASO)
+============================================================
+
+PASO 1: MODIFICAR EL CÓDIGO LOCAL EN TU PC
+------------------------------------------
+Editá los archivos del proyecto (backend, frontend, etc.) en tu PC 
+usando tu editor habitual.
+
+PASO 2: ACTUALIZAR EL NÚMERO DE VERSIÓN (CRÍTICO)
+-----------------------------------------------
+Editá el archivo 'version.json' en la raíz del proyecto:
+- 'version': Incrementá el número (ej: de "1.0.7" a "1.0.8").
+- 'release_date': Poné la fecha de hoy.
+- 'release_notes': Escribí qué cambios hiciste para verlos en la UI.
+
+IMPORTANTE: Si no incrementás este número, la RPi pensará que ya 
+está actualizada y no mostrará el cartel de "Nueva versión".
+
+PASO 3: SUBIR LOS CAMBIOS A GITHUB
+----------------------------------
+Desde la terminal de tu PC (Git Bash o PowerShell):
+1. git add .
+2. git commit -m "Descripción corta de lo que cambiaste"
+3. git push origin main
+
+PASO 4: ACTUALIZAR LA RASPBERRY PI
+----------------------------------
+Entrá a la interfaz web de la Raspberry Pi:
+1. Al entrar, el sistema chequeará GitHub automáticamente (o esperá 1 min).
+2. Verás un banner que dice "Nueva versión disponible: vX.X.X".
+3. Hacé clic en "Actualizar".
+4. El sistema descargará el ZIP, instalará archivos y se reiniciará solo.
+5. Verás el estado "Actualización completada" cuando termine.
+
+============================================================
+2. ¿DÓNDE VER LOS CAMBIOS EN GITHUB?
+============================================================
+
+- ARCHIVOS ACTUALES: Entrá al link de GitHub para ver el código en el branch "main".
+- HISTORIAL: Hacé clic en "Commits" (el ícono del reloj) para ver cada "push" 
+  que fuiste haciendo y qué se cambió en cada uno.
+- NOTAS DE VERSIÓN: Podés ver qué versión está "publicada" entrando al archivo
+  'version.json' directamente en GitHub.
+
+============================================================
+3. POSIBLES PROBLEMAS Y SOLUCIONES
+============================================================
+
+- LA RPI NO DETECTA EL UPDATE: Verificá que el 'version.json' en GitHub tenga 
+  un número mayor al que tiene la RPi instalada (lo ves en el Dashboard).
+- LA ACTUALIZACIÓN SE QUEDA COLGADA: El sistema tiene un mecanismo de 
+  recuperación automática. Esperá 1 minuto y recargá la página. Si no funciona, 
+  reiniciá la RPi manualmente desenchufándola.
+- FALLO EN REQUISITOS (PIP): Si agregás librerías nuevas en 
+  'backend/requirements.txt', el sistema OTA intentará instalarlas solo. 
+  Si falla, verás un error en el log de la RPi.
+
+============================================================
+Taller Infotek Ingeniería - 2026
+============================================================
